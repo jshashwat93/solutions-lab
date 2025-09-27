@@ -1,0 +1,53 @@
+EKS
+
+Step 1: Create yaml
+
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: eks-cluster-1
+  region: us-east-2
+  version: "1.33"
+
+iam:
+  withOIDC: true
+
+nodeGroups:
+  - name: ng-1
+    instanceType: t3.xlarge
+    desiredCapacity: 2
+
+addons:
+- name: aws-ebs-csi-driver
+  wellKnownPolicies:
+    ebsCSIController: true
+
+Step 2: Create EKS cluster
+
+eksctl create cluster -f cluster.yaml
+
+Step 4: Create Storage Class yaml
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+parameters:
+  type: gp3
+
+
+Step 5: Create the storage class:
+
+kubectl apply -f storageclass.yaml
+
+To delete:
+
+eksctl delete cluster --name eks-cluster-1 --force --disable-nodegroup-eviction
+
